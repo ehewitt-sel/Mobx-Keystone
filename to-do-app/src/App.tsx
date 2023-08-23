@@ -4,15 +4,35 @@ import { ToDoList } from './ToDoList'
 import {AddToDoItem} from "./AddToDoItem"
 import { ActiveToDoItem } from './ActiveToDoItem'
 import { ToDoListView } from './ToDoListView'
-import { registerRootStore } from 'mobx-keystone'
+import { applySnapshot, getSnapshot, registerRootStore } from 'mobx-keystone'
+import { reaction } from 'mobx'
 
 export default function App() {
+  const [serialized, setSerialized] = useState("")
+  
   const [list] = useState(() => registerRootStore(new ToDoList({ items: [] })))
+  
+  reaction(() => getSnapshot(list), (snapshot) => { setSerialized(JSON.stringify(snapshot)) })
+  
   return (
     <div>
       <AddToDoItem addToDo={(item: ToDoItem) => { list.add(item) }}/> 
       <ActiveToDoItem list={list}/>
       <ToDoListView list={list}/>
+      <br/><br/>
+      Serialized state:<br/>
+      <textarea cols={120} rows={20} value={serialized} onChange={e => setSerialized(e.currentTarget.value)}/>
+      <br/>
+      <button onClick={() => {
+        try {
+          var parsed = JSON.parse(serialized)
+          applySnapshot(list, parsed)
+        }
+        catch (error) {
+          alert(error)
+        }
+      }
+        }>Apply</button>
     </div>
   )
 }
